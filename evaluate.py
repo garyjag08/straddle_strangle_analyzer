@@ -59,3 +59,38 @@ class Evaluate:
 
         #return break_even_upside, break_even_downside
         return break_even_percent_upside, break_even_percent_downside
+    
+    def get_min_max(self, _df,i,forward_values,attribute):
+        end_index = min(i+forward_values,len(_df)-1)
+        if attribute == "High":
+            max_value = _df.loc[i:end_index,attribute].max()
+            return max_value
+        elif attribute == "Low":
+            min_value = _df.loc[i:end_index,attribute].min()
+            return min_value
+
+    def compute_percent_change(self,start,end_val):
+        _diff = end_val-start
+        _percent = (_diff/start)*100
+        return _percent
+    
+    def find_probability(self, df, upside_needed, downside_needed, num_days):
+        '''
+        :param df: the dataframe that holds the stock data
+        :param upside_needed: the percentage we need to break even
+        :param downside_needed: the percentage needed for the stock to go down to breakeven
+        :param num_days: the number of days we need to look forward when finding out how many days
+        :return: the number of times in the past the stock has moved X percent for the straddle/strangle to be profitable
+        '''
+        got_there = 0
+        total = 0
+        for i in range(len(df)-num_days):
+            total += 1
+            _close = df.iloc[i]["Close"]
+            _upside = self.get_min_max(df,i,num_days,"High")
+            _downside = self.get_min_max(df,i,num_days,"Low")
+            _percentUp = self.compute_percent_change(_close,_upside)
+            _percentDown = self.compute_percent_change(_close,_downside)
+            if _percentUp >= upside_needed or _percentDown <= downside_needed:
+                got_there += 1
+        return total, got_there 
